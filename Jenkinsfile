@@ -16,41 +16,78 @@ pipeline {
     }
 
     stage('Prepare .env') {
-      steps {
-        sh '''
-          echo "Preparing deployment directory..."
+  steps {
+    withCredentials([
+      string(credentialsId: 'POSTGRES_PASSWORD', variable: 'POSTGRES_PASSWORD'),
+      string(credentialsId: 'JWT_SECRET', variable: 'JWT_SECRET')
+    ]) {
+      sh '''
+        echo "Creating .env securely..."
 
-          mkdir -p /home/ec2-user/freecycle
+        cat <<EOF > .env
+NODE_ENV=production
 
-          echo "Copying project to deployment directory..."
-          rsync -av --delete ./ /home/ec2-user/freecycle/
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=freecycle
+POSTGRES_USER=freecycle
+POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 
-          cd /home/ec2-user/freecycle
+REDIS_HOST=redis
+REDIS_PORT=6379
 
-          echo "Creating .env..."
-          cp .env.example .env
+JWT_SECRET=$JWT_SECRET
+JWT_EXPIRES_IN=7d
 
-          sed -i 's|http://localhost:8080|http://65.0.96.112:8080|g' .env
-        '''
-      }
+GATEWAY_PORT=8080
+USER_SERVICE_PORT=4001
+LISTING_SERVICE_PORT=4002
+LOCATION_SERVICE_PORT=4003
+CHAT_SERVICE_PORT=4004
+NOTIFICATION_SERVICE_PORT=4005
+
+USER_SERVICE_URL=http://user-service:4001
+LISTING_SERVICE_URL=http://listing-service:4002
+LOCATION_SERVICE_URL=http://location-service:4003
+CHAT_SERVICE_URL=http://chat-service:4004
+NOTIFICATION_SERVICE_URL=http://notification-service:4005
+
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+S3_BUCKET=
+S3_ENDPOINT=
+
+VITE_API_BASE_URL=http://65.0.96.112:8080
+VITE_WS_URL=http://65.0.96.112:8080
+EOF
+      '''
     }
+  }
+}
 
     stage('Build & Deploy') {
-      steps {
-        sh '''
-          cd /home/ec2-user/freecycle
+  steps {
+    sh '''
+      echo "Preparing deployment directory..."
 
-          echo "Stopping old containers..."
-          docker compose down --remove-orphans || true
+      mkdir -p /home/ec2-user/freecycle
 
-          echo "Building and starting containers..."
-          docker compose up -d --build
+      echo "Copying project files..."
+      cp -r * /home/ec2-user/freecycle/
 
-          echo "Running containers:"
-          docker ps
-        '''
-      }
-    }
+      cd /home/ec2-user/freecycle
+
+      echo "Stopping old containers..."
+      docker compose down --remove-orphans || true
+
+      echo "Building and starting containers..."
+      docker compose up -d --build
+
+      docker ps
+    '''
+  }
+}
 
   }
 
