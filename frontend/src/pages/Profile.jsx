@@ -36,7 +36,7 @@ export default function Profile() {
   return (
     <div className="container">
       <div className="card">
-        <h2>Hi, {user.username}</h2>
+        <h2>Hello, {user.username}</h2>
         <p className="muted">{user.email}</p>
         {coords && (
           <button className="btn secondary" onClick={saveLocation}>
