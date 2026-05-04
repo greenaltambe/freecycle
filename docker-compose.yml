@@ -1,0 +1,141 @@
+# =====================================================================
+# Local Free Stuff Platform - local & CI orchestration.
+#
+# Usage:
+#   cp .env.example .env
+#   docker compose up --build
+#
+# Services:
+#   - postgres (PostGIS)         5432
+#   - redis (event bus)          6379
+#   - api-gateway                8080  (only port exposed publicly)
+#   - user-service               4001  (internal)
+#   - listing-service            4002  (internal)
+#   - location-service           4003  (internal)
+#   - chat-service               4004  (internal, also serves /socket.io)
+#   - notification-service       4005  (internal)
+#   - frontend                   5173  (Vite dev) / 80 in prod build
+# =====================================================================
+
+services:
+  postgres:
+    image: postgis/postgis:15-3.4
+    container_name: freecycle-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-freecycle}
+      POSTGRES_USER:     ${POSTGRES_USER:-freecycle}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-freecycle_dev_pw}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:Z
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-freecycle} -d ${POSTGRES_DB:-freecycle}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [freecycle]
+
+  redis:
+    image: redis:7-alpine
+    container_name: freecycle-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+    networks: [freecycle]
+
+  user-service:
+    build:
+      context: .
+      dockerfile: services/user-service/Dockerfile
+    image: freecycle/user-service:latest
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [freecycle]
+
+  listing-service:
+    build:
+      context: .
+      dockerfile: services/listing-service/Dockerfile
+    image: freecycle/listing-service:latest
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    networks: [freecycle]
+
+  location-service:
+    build:
+      context: .
+      dockerfile: services/location-service/Dockerfile
+    image: freecycle/location-service:latest
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [freecycle]
+
+  chat-service:
+    build:
+      context: .
+      dockerfile: services/chat-service/Dockerfile
+    image: freecycle/chat-service:latest
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    networks: [freecycle]
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    image: freecycle/notification-service:latest
+    env_file: .env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    networks: [freecycle]
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    image: freecycle/api-gateway:latest
+    env_file: .env
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    depends_on:
+      - user-service
+      - listing-service
+      - location-service
+      - chat-service
+      - notification-service
+    networks: [freecycle]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+        VITE_WS_URL:       http://localhost:8080
+    image: freecycle/frontend:latest
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
+    networks: [freecycle]
+
+volumes:
+  postgres-data:
+
+networks:
+  freecycle:
+    driver: bridge

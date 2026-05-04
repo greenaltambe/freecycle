@@ -1,0 +1,13 @@
+{
+  "name": "@freecycle/shared",
+  "version": "1.0.0",
+  "description": "Shared utilities for all backend services (db, auth, event bus, logger).",
+  "main": "src/index.js",
+  "private": true,
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.1",
+    "pino": "^9.5.0",
+    "redis": "^4.7.0"
+  }
+}
