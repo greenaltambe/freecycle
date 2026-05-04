@@ -12,20 +12,31 @@ pipeline {
     stage('Checkout') {
       steps {
         checkout scm
-        sh 'git rev-parse --short HEAD'
       }
     }
 
-    stage('Build & Deploy (Docker Compose)') {
+    stage('Prepare .env') {
+      steps {
+        sh '''
+          echo "Creating .env file..."
+
+          cp .env.example .env
+
+          # Fix frontend URLs for EC2
+          sed -i 's|http://localhost:8080|http://65.0.96.112:8080|g' .env
+        '''
+      }
+    }
+
+    stage('Build & Deploy') {
       steps {
         sh '''
           echo "Stopping old containers..."
           docker compose down || true
 
-          echo "Building and starting new containers..."
+          echo "Building and starting..."
           docker compose up -d --build
 
-          echo "Running containers:"
           docker ps
         '''
       }
