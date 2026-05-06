@@ -16,18 +16,19 @@ pipeline {
     }
 
     stage('Prepare .env') {
-  steps {
-    withCredentials([
-  string(credentialsId: 'POSTGRES_PASSWORD', variable: 'POSTGRES_PASSWORD'),
-  string(credentialsId: 'JWT_SECRET', variable: 'JWT_SECRET'),
-  string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-  string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
-  string(credentialsId: 'S3_BUCKET', variable: 'S3_BUCKET')
-]) {
-sh """
-  echo "Creating .env securely..."
+      steps {
+        withCredentials([
+          string(credentialsId: 'POSTGRES_PASSWORD', variable: 'POSTGRES_PASSWORD'),
+          string(credentialsId: 'JWT_SECRET', variable: 'JWT_SECRET'),
+          string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+          string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
+          string(credentialsId: 'S3_BUCKET', variable: 'S3_BUCKET')
+        ]) {
 
-  cat <<EOF > .env
+          sh '''
+            echo "Creating .env securely..."
+
+            cat > .env <<EOF
 NODE_ENV=production
 
 POSTGRES_HOST=postgres
@@ -48,33 +49,43 @@ AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 S3_BUCKET=$S3_BUCKET
 S3_ENDPOINT=
 EOF
-"""
+
+            echo "===== VERIFYING GENERATED ENV ====="
+
+            grep AWS .env | sed 's/=.*/=***/'
+
+            echo "ACCESS_KEY_LENGTH=${#AWS_ACCESS_KEY_ID}"
+            echo "SECRET_KEY_LENGTH=${#AWS_SECRET_ACCESS_KEY}"
+          '''
+        }
+      }
     }
-  }
-}
 
     stage('Build & Deploy') {
-  steps {
-    sh '''
-      echo "Preparing deployment directory..."
+      steps {
+        sh '''
+          echo "Preparing deployment directory..."
 
-      mkdir -p /home/ec2-user/freecycle
+          mkdir -p /home/ec2-user/freecycle
 
-      echo "Copying project files..."
-      cp -r * /home/ec2-user/freecycle/
+          echo "Copying project files..."
+          cp -r . /home/ec2-user/freecycle/
 
-      cd /home/ec2-user/freecycle
+          cd /home/ec2-user/freecycle
 
-      echo "Stopping old containers..."
-      docker compose down --remove-orphans || true
+          echo "Verifying .env..."
+          grep AWS .env | sed 's/=.*/=***/'
 
-      echo "Building and starting containers..."
-      docker compose up -d --build
+          echo "Stopping old containers..."
+          docker compose down --remove-orphans || true
 
-      docker ps
-    '''
-  }
-}
+          echo "Building and starting containers..."
+          docker compose up -d --build
+
+          docker ps
+        '''
+      }
+    }
 
   }
 
@@ -82,9 +93,11 @@ EOF
     always {
       sh 'docker image prune -f || true'
     }
+
     success {
       echo "Deployment SUCCESS"
     }
+
     failure {
       echo "Deployment FAILED"
     }
