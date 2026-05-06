@@ -24,10 +24,10 @@ pipeline {
   string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
   string(credentialsId: 'S3_BUCKET', variable: 'S3_BUCKET')
 ]) {
-      sh '''
-        echo "Creating .env securely..."
+sh """
+  echo "Creating .env securely..."
 
-        cat <<EOF > .env
+  cat <<EOF > .env
 NODE_ENV=production
 
 POSTGRES_HOST=postgres
@@ -42,29 +42,13 @@ REDIS_PORT=6379
 JWT_SECRET=$JWT_SECRET
 JWT_EXPIRES_IN=7d
 
-GATEWAY_PORT=8080
-USER_SERVICE_PORT=4001
-LISTING_SERVICE_PORT=4002
-LOCATION_SERVICE_PORT=4003
-CHAT_SERVICE_PORT=4004
-NOTIFICATION_SERVICE_PORT=4005
-
-USER_SERVICE_URL=http://user-service:4001
-LISTING_SERVICE_URL=http://listing-service:4002
-LOCATION_SERVICE_URL=http://location-service:4003
-CHAT_SERVICE_URL=http://chat-service:4004
-NOTIFICATION_SERVICE_URL=http://notification-service:4005
-
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 S3_BUCKET=$S3_BUCKET
 S3_ENDPOINT=
-
-VITE_API_BASE_URL=http://65.0.96.112:8080
-VITE_WS_URL=http://65.0.96.112:8080
 EOF
-      '''
+"""
     }
   }
 }
