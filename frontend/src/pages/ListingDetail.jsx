@@ -9,6 +9,7 @@ export default function ListingDetail() {
   const { user } = useAuth();
   const [listing, setListing] = useState(null);
   const [err, setErr] = useState(null);
+  const [activeImg, setActiveImg] = useState(0);
 
   useEffect(() => {
     api.get(`/api/listings/${id}`)
@@ -16,8 +17,17 @@ export default function ListingDetail() {
       .catch((e) => setErr(e.response?.data?.error || 'Failed to load listing'));
   }, [id]);
 
-  if (err) return <div className="container"><p className="error">{err}</p></div>;
-  if (!listing) return <div className="container">Loading...</div>;
+  if (err) return (
+    <div className="container">
+      <p className="error">⚠️ {err}</p>
+    </div>
+  );
+
+  if (!listing) return (
+    <div className="container">
+      <div className="spinner" />
+    </div>
+  );
 
   const isOwner = user && user.id === listing.userId;
 
@@ -40,35 +50,102 @@ export default function ListingDetail() {
     navigate(`/chats/${data.chat.id}`);
   }
 
-  return (
-    <div className="container" style={{ maxWidth: 720 }}>
-      <div className="card">
-        <h2>{listing.title} <span className={`tag ${listing.status}`}>{listing.status}</span></h2>
-        <p className="muted">{listing.categoryName} · posted {new Date(listing.createdAt).toLocaleString()}</p>
+  const imgs = listing.images || [];
 
-        {listing.images?.length > 0 && (
-          <div className="grid">
-            {listing.images.map((img) => (
-              <img key={img.id} src={img.url} alt="" style={{ width: '100%', borderRadius: 8 }} />
-            ))}
+  return (
+    <div className="container fade-in" style={{ maxWidth: 760 }}>
+      {/* Back link */}
+      <button
+        className="btn secondary"
+        style={{ marginBottom: 20, padding: '7px 14px', fontSize: '0.85rem' }}
+        onClick={() => navigate(-1)}
+      >
+        ← Back
+      </button>
+
+      <div className="card">
+        {/* Title & Status */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
+          <h2 style={{ margin: 0 }}>{listing.title}</h2>
+          <span className={`tag ${listing.status}`}>{listing.status}</span>
+        </div>
+        <p className="muted" style={{ marginBottom: 20 }}>
+          {listing.categoryName} · posted {new Date(listing.createdAt).toLocaleString()}
+        </p>
+
+        {/* Image gallery */}
+        {imgs.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            {/* Main image */}
+            <div style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 10, background: '#1a1d27' }}>
+              <img
+                src={imgs[activeImg].url}
+                alt={listing.title}
+                style={{ width: '100%', maxHeight: 420, objectFit: 'contain', display: 'block' }}
+              />
+            </div>
+            {/* Thumbnails */}
+            {imgs.length > 1 && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {imgs.map((img, idx) => (
+                  <button
+                    key={img.id}
+                    onClick={() => setActiveImg(idx)}
+                    style={{
+                      padding: 0, border: 'none', borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
+                      outline: activeImg === idx ? '2px solid #38bd78' : '2px solid transparent',
+                      outlineOffset: 2,
+                      background: 'transparent',
+                    }}
+                  >
+                    <img
+                      src={img.url}
+                      alt={`img ${idx + 1}`}
+                      style={{ width: 72, height: 72, objectFit: 'cover', display: 'block', borderRadius: 8 }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        <p style={{ whiteSpace: 'pre-wrap' }}>{listing.description}</p>
-        {listing.addressText && <p className="muted">Pickup: {listing.addressText}</p>}
+        {/* Description */}
+        {listing.description && (
+          <>
+            <h3 style={{ marginBottom: 8 }}>About this item</h3>
+            <p style={{ whiteSpace: 'pre-wrap', color: '#c8ccdb', lineHeight: 1.7, marginBottom: 16 }}>
+              {listing.description}
+            </p>
+          </>
+        )}
 
-        <div className="row" style={{ marginTop: 16 }}>
+        {listing.addressText && (
+          <p className="muted" style={{ marginBottom: 8 }}>
+            📍 Pickup: {listing.addressText}
+          </p>
+        )}
+
+        <hr className="divider" />
+
+        {/* Actions */}
+        <div className="btn-row">
           {!isOwner && user && listing.status === 'available' && (
-            <button className="btn" onClick={startChat}>Message owner</button>
+            <button className="btn" onClick={startChat}>💬 Message owner</button>
           )}
           {isOwner && listing.status === 'available' && (
-            <button className="btn secondary" onClick={() => setStatus('taken')}>Mark as taken</button>
+            <button className="btn secondary" onClick={() => setStatus('taken')}>✅ Mark as taken</button>
           )}
           {isOwner && listing.status === 'taken' && (
-            <button className="btn secondary" onClick={() => setStatus('available')}>Mark available</button>
+            <button className="btn secondary" onClick={() => setStatus('available')}>🔄 Mark available</button>
           )}
           {isOwner && (
-            <button className="btn danger" onClick={remove}>Delete</button>
+            <button className="btn danger" onClick={remove}>🗑️ Delete listing</button>
+          )}
+          {!user && listing.status === 'available' && (
+            <p className="muted">
+              <a href="/login" style={{ color: '#38bd78' }}>Login</a> to message the owner
+            </p>
           )}
         </div>
       </div>

@@ -5,14 +5,15 @@ import { useAuth } from '../context/AuthContext.jsx';
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail]       = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [err, setErr]           = useState(null);
-  const [busy, setBusy]         = useState(false);
+  const [err, setErr] = useState(null);
+  const [busy, setBusy] = useState(false);
 
   async function onSubmit(e) {
     e.preventDefault();
-    setErr(null); setBusy(true);
+    setErr(null);
+    setBusy(true);
     try {
       await login(email, password);
       navigate('/');
@@ -24,19 +25,42 @@ export default function Login() {
   }
 
   return (
-    <div className="container" style={{ maxWidth: 420 }}>
+    <div className="container fade-in" style={{ maxWidth: 440, paddingTop: 60 }}>
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>⬡</div>
+        <div className="page-title">Welcome back</div>
+        <p className="muted">Sign in to your Freecycle account</p>
+      </div>
+
       <div className="card">
-        <h2>Sign in</h2>
         <form onSubmit={onSubmit}>
-          <label>Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <label>Email address</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            required
+          />
+
           <label>Password</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          {err && <p className="error">{err}</p>}
-          <button className="btn" disabled={busy}>{busy ? '...' : 'Login'}</button>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+          />
+
+          {err && <p className="error">⚠️ {err}</p>}
+
+          <button className="btn" disabled={busy} style={{ width: '100%', justifyContent: 'center' }}>
+            {busy ? '⏳ Signing in…' : '🔑 Sign in'}
+          </button>
         </form>
-        <p className="muted" style={{ marginTop: 12 }}>
-          No account? <Link to="/register">Register</Link>
+
+        <p className="muted" style={{ marginTop: 16, textAlign: 'center' }}>
+          No account? <Link to="/register" style={{ color: '#38bd78', fontWeight: 600 }}>Register for free</Link>
         </p>
       </div>
     </div>

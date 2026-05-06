@@ -22,26 +22,30 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <div>
-        <Link to="/" className="brand">Freecycle</Link>
+      <div className="navbar-links">
+        <Link to="/" className="brand">⬡ Freecycle</Link>
         <Link to="/">Home</Link>
-        {user && <Link to="/new">+ New listing</Link>}
         {user && (
           <Link to="/chats">
-            Chats {unread > 0 && <span className="badge">{unread}</span>}
+            💬 Chats {unread > 0 && <span className="badge">{unread}</span>}
           </Link>
         )}
       </div>
-      <div>
+      <div className="navbar-links">
         {user ? (
           <>
-            <Link to="/profile">{user.username}</Link>
+            {user && (
+              <Link to="/new" className="new-listing-btn">
+                + New listing
+              </Link>
+            )}
+            <Link to="/profile">👤 {user.username}</Link>
             <button onClick={() => { logout(); navigate('/'); }}>Logout</button>
           </>
         ) : (
           <>
             <Link to="/login">Login</Link>
-            <Link to="/register">Register</Link>
+            <Link to="/register" className="new-listing-btn">Register</Link>
           </>
         )}
       </div>
