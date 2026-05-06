@@ -62,31 +62,33 @@ EOF
     }
 
     stage('Build & Deploy') {
-      steps {
-        sh '''
-          echo "Preparing deployment directory..."
+  steps {
+    sh '''
+      echo "Preparing deployment directory..."
 
-          mkdir -p /home/ec2-user/freecycle
+      mkdir -p /home/ec2-user/freecycle
 
-          echo "Copying project files..."
-          cp -r . /home/ec2-user/freecycle/
+      echo "Syncing project files..."
+      rsync -av --delete \
+        --exclude='.git' \
+        --exclude='node_modules' \
+        ./ /home/ec2-user/freecycle/
 
-          cd /home/ec2-user/freecycle
+      cd /home/ec2-user/freecycle
 
-          echo "Verifying .env..."
-          grep AWS .env | sed 's/=.*/=***/'
+      echo "Verifying .env..."
+      grep AWS .env | sed 's/=.*/=***/'
 
-          echo "Stopping old containers..."
-          docker compose down --remove-orphans || true
+      echo "Stopping old containers..."
+      docker compose down --remove-orphans || true
 
-          echo "Building and starting containers..."
-          docker compose up -d --build
+      echo "Building and starting containers..."
+      docker compose up -d --build
 
-          docker ps
-        '''
-      }
-    }
-
+      docker ps
+    '''
+  }
+}
   }
 
   post {
