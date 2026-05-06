@@ -18,9 +18,12 @@ pipeline {
     stage('Prepare .env') {
   steps {
     withCredentials([
-      string(credentialsId: 'POSTGRES_PASSWORD', variable: 'POSTGRES_PASSWORD'),
-      string(credentialsId: 'JWT_SECRET', variable: 'JWT_SECRET')
-    ]) {
+  string(credentialsId: 'POSTGRES_PASSWORD', variable: 'POSTGRES_PASSWORD'),
+  string(credentialsId: 'JWT_SECRET', variable: 'JWT_SECRET'),
+  string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+  string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY'),
+  string(credentialsId: 'S3_BUCKET', variable: 'S3_BUCKET')
+]) {
       sh '''
         echo "Creating .env securely..."
 
@@ -53,9 +56,9 @@ CHAT_SERVICE_URL=http://chat-service:4004
 NOTIFICATION_SERVICE_URL=http://notification-service:4005
 
 AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-S3_BUCKET=
+AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+S3_BUCKET=$S3_BUCKET
 S3_ENDPOINT=
 
 VITE_API_BASE_URL=http://65.0.96.112:8080
